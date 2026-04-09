@@ -13,14 +13,19 @@ const obj = add([
     "square", // Classify this object as "shape"
     color("blue"),
      {
-            entropy: 2,
-            tiletype: Math.floor(Math.random() * 4) ,
             north:0,
             east:0,
             south:0,
             west:0, 
+            tilearray:[],
+            getEntropy() { return this.tilearray.length; },
+            getTile() { if (this.tilearray.length==1)
+            {return this.tilearray[0]}
+            else {return 0}
+             },
         },
     
 ]);
+
 return obj;
 }
