@@ -14,7 +14,7 @@ The checkind is used later to determine the direction the player is moving
 The sz is the size of each tile
 The wave variable for the time of the current wave is created
 The startypenum is the amount of unique tile types
-The gridOffset was used to create a gap in between the tiles. It was present in earlier versions but is now there just in case the tiles need to be debugged where i can see the borders
+The gridOffset is how far offset the origin point is for creating the tiles. This is done such that there are 3 tiles in each direction. So the player doesn't go off the map.
 Tile rules are the tiles that can go in the NESW position for each tile type
 Wind is used to indicate the direction the wind is blowing
 Wind duration is how long the wind stays pointing in given direction
@@ -61,7 +61,14 @@ Then the X and Y movement values are calculated by multiplying the actual speede
 Additionally this is where we check if the player is colling with the objects titled ground. If they are then speed goes to zero. If they aren't colliding the speed increments back to speed then all the squares move in the opposite direction of speed.
 This was done to prevent an issue where the player drove directly into the ground and then bounced back allowing to ground to conitue moving resulting in the player going off screen.
 
+## Infinite World
+Still inside the update function, I wanted the world to continue scrolling if the player went to the edges of the screen so it felt like an infinite world.
+So here I created 4 variables that pull from matCode, which stores the current tiles. It pulls the center tiles on the top, bottom, left and right.
+Then it checks whether the each square has a position too far in each direction. If the square is too far in one direction. The scroll world function is called by passing the direction to update the map and then the allsq variable is updated with the new squares.
 
+## Scroll world
+I realized while I was writing the wave function collapse code that any tiles added to the edge of an already collapsed column would just need the column and a new empty column of tiles to extend the world. Then the column on the opposite side could be removed so a consisitent tile matrix size would exist. This function operates on that idea. 
+First the function needs the direction that the player is going. rmInd is the index that is to be removed. So if the player is going 
 
 
 
