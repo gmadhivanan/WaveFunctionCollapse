@@ -1,5 +1,5 @@
 # WaveFunctionCollapse
-## Explaining the code
+# Explaining the code
 ## Setup
 I initially import 5 different objects into the game.
 The welcome text is the opening text to the game. This is mainly a carry over from the basic game file
