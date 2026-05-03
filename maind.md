@@ -1,289 +1,774 @@
 import { addWelcomeText } from "../objects/welcomeText.js";
-import { addsquare } from "../objects/square.js"
+import { addsquare } from "../objects/square.js";
+import { addboat } from "../objects/boat.js";
+import { addsail } from "../objects/sail.js"
+import { addrudder } from "../objects/rudder.js"
 
-var matsiz = 5;
-var sz = 200;
-var starttypenum = 7;
-var tileRules = [
-  [[2, 3, 4, 5, 7], [2, 5, 6, 7],       [3, 4, 6],          [2, 4, 6, 7]],       // tile 1
-  [[3, 4, 5, 7],    [1, 3, 4, 5],        [1, 3, 4, 6],       [1, 3, 4, 5]],       // tile 2
-  [[1, 2, 4, 6],    [2, 5, 6, 7],        [1, 2, 4, 5, 7],    [2, 4, 6, 7]],       // tile 3 fixed
-  [[1, 2, 3, 4, 6], [1, 2, 3, 4, 5],    [1, 2, 3, 4, 5, 6, 7], [2, 4, 6, 7]],    // tile 4
-  [[3, 4, 5, 7],    [2, 5, 6, 7],        [1, 2, 5, 7],       [1, 2, 3, 4, 5]],    // tile 5
-  [[1, 2, 4, 6],    [1, 3, 4],           [3, 4, 6],          [1, 3, 5]],          // tile 6
-  [[3, 4, 5, 7],    [1, 3, 4],           [1, 2, 5, 7],       [1, 3, 5]]           // tile 7
+let matsiz = 7;
+const checkind = Math.round(matsiz / 2);
+let sz = 700;
+let wave=0
+let starttypenum = 5;
+let gridOffset = 3 * sz
+let tileRules = [
+  [[2, 3, 4, 5], [2, 5], [3, 4], [2, 4]],
+  [[3, 4, 5], [1, 3, 4, 5], [1, 3, 4], [1, 3, 4, 5]],
+  [[1, 2, 4], [2, 5], [1, 2, 4, 5], [2, 4]],
+  [[1, 2, 3, 4], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5], [2, 4]],
+  [[3, 4, 5], [2, 5], [1, 2, 5], [1, 2, 3, 4, 5]],
+
 ];
-
-var arr = Array.from({ length: starttypenum }, (_, i) => i + 1);
-
+let wind = 180
+let wind_duration = 30
+let sailH=0.05;
+const SPEED_base =4;
+let SPEED = 4;
+let arr = Array.from({ length: starttypenum }, (_, i) => i + 1);
 scene("game", () => {
-  let starttype = 0;
-  for (let h = 0; h < matsiz; h++) {
-    const h1 = h * sz;
-    let starter = Math.floor(rand() * matsiz);
-    for (let w = 0; w < matsiz; w++) {
-      const w1 = w * sz;
-      const sq0 = addsquare(w1, h1, sz, starttype);
-      if (w == starter) {
-        sq0.tilearray = [Math.floor(rand() * starttypenum)+1];
-      } else {
-        sq0.tilearray = [...arr];
-      }
-      const label = sq0.add([
-        //text(sq0.getEntropy()),
-        text(sq0.getTile()),
-        anchor("center"),
-       
-        pos(sq0.width / 2, sq0.height / 2),
-        // center it within the square
-        color("white")
-      ]);
-      sq0.label = label;
-    }
-  }
-  const Welcome = addWelcomeText();
-  const player= add([
-    sprite("mark"),
-    pos(center()),
-    area(),
-    body(),
-    scale(1),
-    anchor("center"),
-    rotate(0)
-  ]);
-  const SPEED = 200;
-const diagSpeedfract=1.4
-onUpdate(() => {
-    if (isKeyDown("up") && isKeyDown("right")) {
-        player.move(SPEED/diagSpeedfract, -SPEED/diagSpeedfract);
-    } else if (isKeyDown("up") && isKeyDown("left")) {
-        player.move(-SPEED/diagSpeedfract, -SPEED/diagSpeedfract);
-    } else if (isKeyDown("down") && isKeyDown("right")) {
-        player.move(SPEED/diagSpeedfract, SPEED/diagSpeedfract);
-    } else if (isKeyDown("down") && isKeyDown("left")) {
-        player.move(-SPEED/diagSpeedfract, SPEED/diagSpeedfract);
-    } else if (isKeyDown("up")) {
-        player.move(0, -SPEED);
-    } else if (isKeyDown("down")) {
-        player.move(0, SPEED);
-    } else if (isKeyDown("left")) {
-        player.move(-SPEED, 0);
-    } else if (isKeyDown("right")) {
-        player.move(SPEED, 0);
-    }
-});
-loadShader("fogOfWar", null, `
-    uniform vec2 u_playerPos;
-    uniform float u_radius;
-    uniform float u_softness;
+  let started = false;
+loadShader("fog", null, `
+    uniform float time;
+    uniform vec2 res;
 
     vec4 frag(vec2 pos, vec2 uv, vec4 color, sampler2D tex) {
-        float dist = distance(pos, u_playerPos);
-        float fog = smoothstep(u_radius, u_radius + u_softness, dist);
-        
-        return vec4(0.0, 0.0, 0.0, fog);
+      vec4 base =def_frag() * vec4(.11, .2, 1, .4*sin(time)*cos(time));
+      vec2 center = res / 2.0;
+        float dist = distance(pos, center);
+        float circle = smoothstep(105.0, 100.0, dist);
+        vec4 yellow = vec4(.3, .3, 0.1, 0.00001);
+      
+      return mix(base, yellow, circle);
+       
     }
 `);
 
-const fogOverlay = add([
+add([
     rect(width(), height()),
     pos(0, 0),
-    opacity(1),
-    shader("fogOfWar", () => ({
-        u_playerPos: vec2(player.pos.x, player.pos.y),
-        u_radius: 150.0,
-        u_softness: 100.0,
+    fixed(),
+    shader("fog", () => ({
+        time: time(),
+        res: vec2(width(), height()),
     })),
-    z(100),
+    z(150),
 ]);
+  let matCode = []
+  for (let h = 0; h < matsiz; h++) { matCode[h] = []; }
+  for (let h = 0; h < matsiz; h++) {
+    const h1 = (h * sz) - gridOffset;
 
+    let starter = Math.floor(Math.random() * matsiz);
+    for (let w = 0; w < matsiz; w++) {
+      const w1 = (w * sz) - gridOffset;
+      const sq0 = addsquare(w1, h1, sz, w, h);
 
-  const pressEvent = onKeyPress((key) => {
-    Welcome.destroy();
-  });
-  const dimlim = (matsiz - 1) * sz;
-  const allsq = get("square");
-  const sqMap = {};
-allsq.forEach(sq => {
-    sqMap[`${sq.pos.x},${sq.pos.y}`] = sq;
+      matCode[w][h] = sq0;
+
+      if (w == starter) {
+        sq0.tilearray = [Math.floor(Math.random() * starttypenum) + 1];
+      } else {
+        sq0.tilearray = [...arr];
+      }
+      //const label = sq0.add([
+        //text(sq0.getEntropy()),
+        //text(sq0.getTile()),
+        //anchor("center"),
+
+       //pos(sq0.width / 2, sq0.height / 2),
+
+        //color("white")
+      //]);
+      //sq0.label = label;
+
+      //console.log(sq0.matRow,sq0.matCol)
+    }
+  }
+  //console.log(matCode)
+  const Welcome = addWelcomeText();
+  
+  const player = addboat()
+  const sail = player.add(addsail());
+  const rud = player.add(addrudder());
+  const wind_ind = add([
+    sprite("sword"),
+    pos(50, height() - 50),
+    scale(1),
+    anchor("center"),
+    rotate((wind + 270) % 360),
+    z(200)
+  ])
+add([
+        text("h for help", { 
+          size: 16,
+          align: "center",
+           width:700 }),
+        pos(width()-80,height()-25),
+        anchor("center"),
+        z(150)
+    ]);
+let score=0
+ let scoreText=add([
+        text("Score: "+score, { 
+          size: 16,
+          align: "center",
+           width:700 }),
+        pos(width()-80,25),
+        anchor("center"),
+        z(150)
+    ]);   
+  let allsq = get("square");
+  let goldFound=null
+player.onCollide("gold", (obj) => {
+    goldFound = obj;
 });
-function getSquareAt(x, y) {
-    return sqMap[`${x},${y}`];
-}
+
+player.onCollideEnd("gold", () => {
+    goldFound = null;
+});
+
+  onUpdate(() => {
+    scoreText.text="Score:"+score
+    wave+=1/10
+    player.scaleTo(.2+(Math.sin(wave%360*Math.PI/180)*0.04))
+    //sail.scaleTo(.05+(Math.sin(wave%360*Math.PI/180)*0.02))
+    //console.log(dt());
+    wind_ind.angle = (wind + 270) % 360
+    let pang = (player.angle + 270) % 360
+    sail.angle = (wind + 270) % 360 - player.angle;
+    let moveX = 0;
+    let moveY = 0;
+    if (isKeyDown("up")) {
+      player.setSails(player.sails + 1)
+      sailH=clamp(sailH+0.01,0.05,.4)
+      sail.scaleTo(0.3,sailH)
+    } else if (isKeyDown("down")) {
+      player.setSails(player.sails - 1)
+      sailH=clamp(sailH-0.01,0.05,.4)
+      sail.scaleTo(0.3,sailH)
+    } else if (isKeyDown("left")) {
+      player.setRudder(player.rudder - 1)
+     rud.angle= clamp(rud.angle+1,-30,30)
+    } else if (isKeyDown("right")) {
+      player.setRudder(player.rudder + 1)
+      rud.angle= clamp(rud.angle-1,-30,30)
+    }
+    let wrad = ((wind + 180) % 360) * Math.PI / 180;
+
+
+    player.heading = player.heading + (player.rudder / 90)
+    player.angle = (player.heading)
+    let prad = ((player.angle + 270) % 360) * Math.PI / 180;
+
+    let adiff = wrad - prad;
+    let alignment = Math.max(0.1, Math.cos(adiff));
+    let speedact = player.sails * SPEED * alignment;
+    moveX = Math.cos(prad) * speedact;
+    moveY = Math.sin(prad) * speedact;
+
+    if (!player.isColliding("ground")) {
+      SPEED=clamp(SPEED+0.1,0,SPEED_base)
+        allsq.forEach(sq => {
+        sq.move(-moveX, -moveY);
+        });
+    }
+    else{SPEED=0}
+   
+
+    const sqL = matCode[0][checkind];
+    const sqR = matCode[matsiz - 1][checkind];
+    const sqU = matCode[checkind][0];
+    const sqD = matCode[checkind][matsiz - 1];
+
+
+    if (sqL.pos.x < -gridOffset) { //console.log("too far East"); 
+      scrollWorld("left")
+      allsq = get("square")
+    }
+    if (sqU.pos.y < -gridOffset) { //console.log("too far South"); 
+      scrollWorld("up")
+      allsq = get("square")
+
+    }
+    if (sqR.pos.x > (matsiz - 2) * sz) { //console.log("too far West");
+      scrollWorld("right")
+      allsq = get("square")
+
+    }
+    if (sqD.pos.y > (matsiz - 2) * sz) { //console.log("too far North"); 
+      scrollWorld("down")
+      allsq = get("square")
+
+    }
+
+  });
+
+
+
+  onKeyPress((key) => {
+
+    if (started == false) {
+      Welcome.destroy();
+      collapseNewTiles(allsq)
+      started=true
+    }
+  });
+
+  
+
+  function check_wind() {
+    let sign = randi(2)
+    let changeval = randi(90)
+    if (sign == 0) { wind = wind - changeval }
+    if (sign == 1) { wind = wind + changeval }
+  }
+  loop(wind_duration, () => {
+    check_wind();
+  });
   function updateTiles(allsq2) {
     let sqind = -1;
     let sqmin = 99;
     for (let s = 0; s < allsq2.length; s++) {
-      const sq = allsq2[s];
       
+      const sq = allsq2[s];
+      if (sq.tilearray.length === 0) {
+        sq.tilearray = [...arr];
+    }
+    if (sq.tilearray.length === 1) continue; 
       let forbiddentiles = [];
-      if (sq.pos.y > 0) {
-        const sqnorth = getSquareAt(sq.pos.x, sq.pos.y - sz);
+      if (sq.matRow > 1) {
+        const sqnorth = matCode[sq.matCol][sq.matRow - 1];
         sq.north = sqnorth.getTile();
         if (sq.north > 0) {
           forbiddentiles = tileRules[sq.north - 1][0];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
+          if (sq.tilearray.length === 0) {
+            randomizeTile(sq);
+          }
         }
       }
-      if (sq.pos.y < dimlim) {
-        const sqsouth = getSquareAt(sq.pos.x, sq.pos.y + sz);
+      if (sq.matRow < matsiz - 2) {
+
+        const sqsouth = matCode[sq.matCol][sq.matRow + 1];;
         sq.south = sqsouth.getTile();
         if (sq.south > 0) {
           forbiddentiles = tileRules[sq.south - 1][2];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
+          if (sq.tilearray.length === 0) {
+            randomizeTile(sq);
+          }
         }
       }
-      if (sq.pos.x > 0) {
-        const sqwest = getSquareAt(sq.pos.x - sz, sq.pos.y);
+      if (sq.matCol > 0) {
+        const sqwest = matCode[sq.matCol - 1][sq.matRow];
         sq.west = sqwest.getTile();
         if (sq.west > 0) {
           forbiddentiles = tileRules[sq.west - 1][3];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
+          if (sq.tilearray.length === 0) {
+            randomizeTile(sq);
+          }
         }
       }
-      if (sq.pos.x < dimlim) {
-        const sqeast = getSquareAt(sq.pos.x + sz, sq.pos.y);
+      if (sq.matCol < matsiz - 2) {
+
+        const sqeast = matCode[sq.matCol + 1][sq.matRow];
         sq.east = sqeast.getTile();
         if (sq.east > 0) {
           forbiddentiles = tileRules[sq.east - 1][1];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
+          if (sq.tilearray.length === 0) {
+             randomizeTile(sq);
+          }
         }
       }
+      //console.log(sqmin)
       if (sq.getEntropy() < sqmin && sq.getEntropy() > 1) {
         sqmin = sq.getEntropy();
+        
         sqind = s;
       }
       //sq.label.text = String(sq.getEntropy());
-      sq.label.text = String(sq.getTile());
+      //sq.label.text = String(sq.getTile());
       if (sq.tilearray.length === 0) {
-    //console.log("Contradiction at", sq.pos.x, sq.pos.y, "north:", sq.north, "south:", sq.south, "east:", sq.east, "west:", sq.west);
-}
-else if (sq.tilearray.length === 1){placeTile(sq)}
-      
+
+      }
+      //else if (sq.tilearray.length === 1){placeTile(sq)}
+
     }
-    
-    if (sqind === -1) return allsq.length
-    else{return sqind;}
-    
+
+    if (sqind === -1) return allsq2.length
+    else { return sqind; }
+
   }
   function randomizeTile(sqi) {
     const len = sqi.tilearray.length;
-    const randind = Math.floor(rand() * len);
+    const randind = Math.floor(Math.random() * len);
     sqi.tilearray = [sqi.tilearray[randind]];
   }
-  let sqind1 = updateTiles(allsq);
-  let x = allsq[sqind1].getEntropy();
-  let i = 0;
-function placeTile(sqin){
-   if (sqin.placed) return;
+  
+
+let treasures = [];
+  function placeTile(sqin) {
+    if (sqin.placed) return;
+    let tile1 = sqin.getTile();
+    //if (tile1 == 0) return;
     sqin.placed = true;
-let n = sqin.getEntropy();
-if (n==1){
-let tile=sqin.getTile();
-let spr="mark"
-console.log(tile)
-if (tile==1){spr="4way"}
-else if (tile==2){spr="NShall"}
-else if (tile==3){spr="EWhall"}
-else if (tile==4){spr="NEhall"}
-else if (tile==5){spr="SWhall"}
-else if (tile==6){spr="Nent"}
-else if (tile==7){spr="Sent"}
 
-  sqin.add([
-    sprite(spr),
-    scale(1),
-    anchor("center"),
-    //area(),
-    //body({ isStatic: true }),
-    pos(sqin.width / 2, sqin.height / 2),
-    rotate(0),
-    spr, 
-  ]);
-addCollision(sqin, tile);
+    //sqin.label.text=sqin.getTile()+", "+sqin.getEntropy()
+    let n = sqin.getEntropy();
+    let sc = 1;
+    let rt = Math.random() * 360
+    let fishrandx=(Math.random()*sz/2)-sz/4
+    let fishrandy=(Math.random()*sz/2)-sz/4
+    let isTreasure=Math.random()
+    const clr =[235, 181, 73]
+    
+      let tile = sqin.getTile();
+      let spr = "rudder"
+        if (tile == 1) {
+        spr = "fish_05"
+        sc = .4
+        
+        sqin.add([
+        rect(sqin.width/10, sqin.height/10),
+        pos(0, 0),
+        color(clr),
+        area(),
+        body({ isStatic: true }),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width/10, sqin.height/10),
+        pos(0, sqin.height-(sqin.height/10)),
+        color(clr),
+        area(),
+        body({ isStatic: true }),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width/10, sqin.height/10),
+        pos(sqin.width-(sqin.width/10), 0),
+        color(clr),
+        area(),
+        body({ isStatic: true }),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width/10, sqin.height/10),
+        pos(sqin.width-(sqin.width/10), sqin.height-(sqin.height/10)),
+        color(clr),
+        area(),
+        body({ isStatic: true }),
+        opacity(1),
+       // z(99),
+        "ground"
+        ]);
+      }
 
+      else if (tile == 2) {
+        spr = "dolphin_01",
+        
+        sc=.1
+        sqin.add([
+        rect(sqin.width/10, sqin.height),
+        pos(0, 0),
+        area(),
+        body({ isStatic: true }),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width/10, sqin.height),
+        pos(sqin.width-(sqin.width/10), 0),
+        area(),
+        body({ isStatic: true }),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+      }
+      else if (tile == 3) {
+        spr = "dolphin_02",
+        
+        sc = .1,
+        sqin.add([
+        rect(sqin.width, sqin.height/10),
+        area(),
+        body({ isStatic: true }),
+        pos(0, 0),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width, sqin.height/10),
+        area(),
+        body({ isStatic: true }),
+        pos(0, sqin.height-(sqin.height/10)),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+      }
+      else if (tile == 4) {
+        spr = "fish_03"
+        
+        sc = .4
+        sqin.add([
+        rect(sqin.width, sqin.height/10),
+        area(),
+        body({ isStatic: true }),
+        pos(0, sqin.height-(sqin.height/10)),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width/10, sqin.height),
+        pos(0, 0),
+        area(),
+        body({ isStatic: true }),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+      }
+      else if (tile == 5) {
+        spr = "fish_04"
+        
+        sc = .4
+        sqin.add([
+        rect(sqin.width/10, sqin.height),
+        pos(sqin.width-(sqin.width/10), 0),
+        area(),
+        body({ isStatic: true }),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+        sqin.add([
+        rect(sqin.width, sqin.height/10),
+        area(),
+        body({ isStatic: true }),
+        pos(0, 0),
+        color(clr),
+        opacity(1),
+        //z(99),
+        "ground"
+        ]);
+      }
+
+
+      //console.log(tile)
+
+      sqin.add([
+        sprite(spr),
+        scale(sc),
+        anchor("center"),
+        color(150, 0, 255),
+        opacity(0.5),
+        //area(),
+        //body({ isStatic: true }),
+        pos(((sqin.width / 2)+fishrandx) , ((sqin.height / 2)+fishrandy) ),
+        rotate(rt),
+        //z(50),
+        "sealife",
+      ]);
+      if (isTreasure>=0.2){
+        const  treasure=sqin.add([
+        sprite("treasure"),
+        scale(.2),
+        anchor("center"),
+        color(150, 0, 255),
+        opacity(0.2),
+        area({isSensor:true}),
+        //body({ isStatic: false }),
+        pos(((sqin.width / 2)-fishrandx) , ((sqin.height / 2)-fishrandy) ),
+        rotate(rt),
+        //z(50),
+        "gold",
+        {amount:Math.round(Math.random()*500)}
+      ]);
+      //treasures.push(treasure);
+
+
+
+      }
+
+
+  }
+  //let log = false
+  let menu
+  //onKeyPress("b", () => {
+    //player.collisionIgnore = ["ground"];
+    //SPEED=SPEED/2;
+    //console.log("dragging the boat")
+
+  //});
+  //onKeyRelease("b",()=>{
+    //player.collisionIgnore = [];
+    //SPEED=SPEED_base;
+
+  //})
+    onKeyPress("w", () => {
+    check_wind();
+    //console.log("dragging the boat")
+
+  });
+  onKeyPress("h", () => {
+    menu=help();
+    //console.log("dragging the boat")
+
+  });
+  
+  onKeyPress("d",()=>{ let timer=1
+        const dtext = add([
+        text("...", { 
+            size: 24,
+            align: "center",
+            width: width()
+        }),
+        pos(width()/2, height()/4),
+        anchor("center"),
+        fixed(),
+        z(150)
+    ]);
+    wait(timer, () => {
+        dtext.text=dredge();
+
+        
+    });
+        wait(timer+1, () => {
+        dtext.destroy();
+   
+    });
+    
+  });
+  onKeyRelease("h",()=>{
+  menu.destroy()
+
+
+  })
+  function help(){
+    const ofs=30
+    const obj=add([
+  
+    rect(width()-ofs, height()-ofs),
+    pos(ofs/2, ofs/2),
+    fixed(),
+    z(200),
+    color(199, 165, 105),
+    opacity(.99)
+    ])
+  obj.add([
+    text("Help", {
+        size: 48,
+        font: "monospace",
+        align: "center",
+        width: 200,
+    }),
+    pos(obj.width / 2, obj.height / 18),
+    anchor("top"),
+    color(0, 0, 0),
+    fixed(),
+    z(201),
+]);
+  obj.add([
+    text("Use up and down arrows to raise or lower the sails.\n Use the right and left arrows to move the rudder.\n Press w to wait for a change of winds.\n Press d to dredge up treasure.\n", {
+        size: 24,
+        font: "monospace",
+        align: "center",
+        width: obj.width ,
+    }),
+    pos(obj.width / 2, obj.height / 4),
+    anchor("top"),
+    color(0, 0, 0),
+    fixed(),
+    z(201),
+]);
+    return obj
+  }
+ function dredge(){    
+  let textOut
+  if (goldFound) {//console.log("found treasure!",goldFound.amount);
+score=score+goldFound.amount
+textOut="found "+goldFound.amount+" gold!"
+goldFound.destroy()
 }
-
-
-}
-function addCollision(sqin, tile) {
-    const s = sz;
-    const w = 10;  // wall thickness
-    const gap = s / 2;      // doorway width
-    const side = (s - gap) / 2; // wall on each side of doorway
-
-    if (tile == 1) {
-        // 4 way intersection - walls on all 4 corners
-        sqin.add([rect(w, side), pos(0, 0),         area(), body({ isStatic: true })]);
-        sqin.add([rect(w, side), pos(s-w, 0),       area(), body({ isStatic: true })]);
-        sqin.add([rect(w, side), pos(0, s-side),    area(), body({ isStatic: true })]);
-        sqin.add([rect(w, side), pos(s-w, s-side),  area(), body({ isStatic: true })]);
-
-    } else if (tile == 2) {
-        // north south hallway - walls on left and right
-        sqin.add([rect(w, s), pos(0, 0),   area(), body({ isStatic: true })]);
-        sqin.add([rect(w, s), pos(s-w, 0), area(), body({ isStatic: true })]);
-
-    } else if (tile == 3) {
-        // east west hallway - walls on top and bottom
-        sqin.add([rect(s, w), pos(0, 0),   area(), body({ isStatic: true })]);
-        sqin.add([rect(s, w), pos(0, s-w), area(), body({ isStatic: true })]);
-
-    } else if (tile == 4) {
-        // north east - open north and east
-        sqin.add([rect(w, side),   pos(0, 0),       area(), body({ isStatic: true })]);  // left top
-        sqin.add([rect(w, side),   pos(0, s-side),  area(), body({ isStatic: true })]);  // left bottom
-        sqin.add([rect(side, w),   pos(0, s-w),     area(), body({ isStatic: true })]);  // bottom left
-        sqin.add([rect(side, w),   pos(s-side, s-w),area(), body({ isStatic: true })]);  // bottom right
-
-    } else if (tile == 5) {
-        // south west - open south and west
-        sqin.add([rect(side, w),   pos(0, 0),       area(), body({ isStatic: true })]);  // top left
-        sqin.add([rect(side, w),   pos(s-side, 0),  area(), body({ isStatic: true })]);  // top right
-        sqin.add([rect(w, side),   pos(s-w, 0),     area(), body({ isStatic: true })]);  // right top
-        sqin.add([rect(w, side),   pos(s-w, s-side),area(), body({ isStatic: true })]);  // right bottom
-
-    } else if (tile == 6) {
-        // room with north entrance
-        sqin.add([rect(side, w),   pos(0, 0),       area(), body({ isStatic: true })]);  // top left
-        sqin.add([rect(side, w),   pos(s-side, 0),  area(), body({ isStatic: true })]);  // top right
-        sqin.add([rect(w, s),      pos(0, 0),       area(), body({ isStatic: true })]);  // left wall
-        sqin.add([rect(w, s),      pos(s-w, 0),     area(), body({ isStatic: true })]);  // right wall
-        sqin.add([rect(s, w),      pos(0, s-w),     area(), body({ isStatic: true })]);  // bottom wall
-
-    } else if (tile == 7) {
-        // room with south entrance
-        sqin.add([rect(s, w),      pos(0, 0),       area(), body({ isStatic: true })]);  // top wall
-        sqin.add([rect(w, s),      pos(0, 0),       area(), body({ isStatic: true })]);  // left wall
-        sqin.add([rect(w, s),      pos(s-w, 0),     area(), body({ isStatic: true })]);  // right wall
-        sqin.add([rect(side, w),   pos(0, s-w),     area(), body({ isStatic: true })]);  // bottom left
-        sqin.add([rect(side, w),   pos(s-side, s-w),area(), body({ isStatic: true })]);  // bottom right
+else{//console.log("bupkes")
+textOut="bupkes"}
+return textOut
+ }
+function spawnSquare(x, y, col, row) {
+      const sq0 = addsquare(x, y, sz, col, row);
+      sq0.tilearray = [...arr];
+      //sq0.label = sq0.add([
+       // text(sq0.getTile()), 
+        //anchor("center"),
+       // pos(sq0.width / 2, sq0.height / 2), 
+       // color("white")
+     // ]);
+      return sq0;
     }
-}
-onKeyPress("b", () => {
-    //console.log(allsq[sqind1])
-});
-onKeyPress("space", () => {
+function updateIndices() {
+      for (let c = 0; c < matCode.length; c++) {
+        for (let r = 0; r < matCode[c].length; r++) {
+          if (matCode[c][r]) {
+            matCode[c][r].matCol = c;
+            matCode[c][r].matRow = r;
+          }
+        }
+      }
+    }
+
+  function scrollWorld(direction) {
+
+    if (direction == "left" || direction == "right") {
+      let rmInd
+      let goingLeft
+      if (direction=="left")
+      {goingLeft=true}
+      else
+      {goingLeft=false}
+      if (goingLeft==true) 
+      { rmInd = 0 } 
+      else 
+      { rmInd = matCode.length - 1 }
+
+      
+      for (let h = 0; h < matsiz; h++) {
+        if (matCode[rmInd][h]) 
+        {destroy(matCode[rmInd][h])}
+      }
+      if (goingLeft==true) 
+      { matCode.shift() } 
+      else { matCode.pop() }
+      updateIndices();
+
+     
+      let refCol
+      let ncind
+      if (goingLeft==true) {
+        refCol = matCode[matCode.length - 1]
+        ncind = matCode.length
+      }
+      else {
+        refCol = matCode[0]
+        ncind = 0
+      }
+      let newX = refCol[checkind].pos.x
+      if (goingLeft==true) { newX += sz }
+      else { newX -= sz }
+
+      const newCol = [];
+      for (let h = 0; h < matsiz; h++) {
+        newCol.push(spawnSquare(newX, refCol[h].pos.y, ncind, h));
+      }
+      if (goingLeft==true) { matCode.push(newCol) } else { matCode.unshift(newCol) }
+      updateIndices();
+
+      let neighbour
+      if (goingLeft==true) { neighbour = matCode[matCode.length - 2] } else { neighbour = matCode[1] }
+      collapseNewTiles([...newCol, ...neighbour]);
+
+    } else {
+      let rmInd
+      let goingUp 
+      if(direction == "up")
+        {goingUp=true}
+      else
+        {goingUp=false}
+      if (goingUp==true) 
+        { rmInd = 0 } 
+      else 
+        { rmInd = matCode[0].length - 1 }
+
+      for (let c = 0; c < matCode.length; c++) {
+        if (matCode[c][rmInd]) 
+        {destroy(matCode[c][rmInd])}
+        if (goingUp==true) 
+        { matCode[c].shift() } 
+        else 
+        { matCode[c].pop() }
+      }
+      updateIndices();
+
+      
+      let refRowind
+      if (goingUp==true) 
+      { refRowind = matCode[checkind].length - 1 } 
+      else 
+      { refRowind = 0 }
+      let newY = matCode[checkind][refRowind].pos.y
+      if (goingUp==true) 
+      { newY += sz } 
+      else 
+      { newY -= sz }
+
+      const newRow = [];
+      for (let c = 0; c < matCode.length; c++) {
+        let newRowind
+        if (goingUp==true) 
+        { newRowind = matCode[c].length } 
+        else { newRowind = 0 }
+        const sq = spawnSquare(matCode[c][refRowind].pos.x, newY, c, newRowind);
+        if (goingUp==true) 
+        { matCode[c].push(sq) } 
+        else { matCode[c].unshift(sq) }
+        newRow.push(sq);
+      }
+      updateIndices();
+
+      const neighbourRow = []
+      for (let c = 0; c < matCode.length; c++) {
+        if (goingUp==true) 
+        { neighbourRow.push(matCode[c][matCode[c].length - 2]) }
+        else 
+        { neighbourRow.push(matCode[c][1]) }
+      }
+      collapseNewTiles([...newRow, ...neighbourRow]);
+    }
+  }
+  function collapseNewTiles(tiles) {
+    let goodtiles = []
+    let badtiles=[]
+    for (let i = 0; i < tiles.length; i++) {
+      if (tiles[i]) { goodtiles.push(tiles[i]) }
+    }
+    
     while (true) {
-        sqind1 = updateTiles(allsq);
-        if (sqind1 >= allsq.length) break; 
-        const x = allsq[sqind1].getEntropy();
-        if (x <= 1) break;
-        randomizeTile(allsq[sqind1]);
+      let ind = updateTiles(goodtiles);
+      if (ind >= goodtiles.length) {
+        //console.log(ind, goodtiles.length);
+        break};
+      let sq2=goodtiles[ind];
+      let entropy = sq2.getEntropy()
+      if (entropy == 1) {
+        placeTile(sq2);
+        //sq2.label.text=sq2.getTile()+","+sq2.getEntropy()
+        break}
+      randomizeTile(sq2);
+      placeTile(sq2)
     }
-});
+        for (let i = 0; i < goodtiles.length; i++) {
+        if (goodtiles[i].getEntropy() == 1) {
+            placeTile(goodtiles[i]);
+        }
+     }
+  }
 
-
-onMousePress(() => {
-    const mousepos = mousePos();
-    const x = Math.floor(mousepos.x / sz) * sz;
-    const y = Math.floor(mousepos.y / sz) * sz;
-    const sq = getSquareAt(x, y);
-    if (sq) {
-        console.log("Position:", sq.pos.x, sq.pos.y);
-        console.log("Tilearray:", sq.tilearray);
-        console.log("Entropy:", sq.getEntropy());
-        console.log("North:", sq.north, "South:", sq.south, "East:", sq.east, "West:", sq.west);
-    }
-});
 });
