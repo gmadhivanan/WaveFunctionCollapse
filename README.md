@@ -52,6 +52,16 @@ Variables are created for the  x and y movement
 Behaviors are added for the directional keys.
 Up and down change the sails setting. It also scales the vertical portion of the sails to make it look like the sails are being raised and lowered
 Left and right change the rudder setting as well as changing the rudder angle which is represented visually with the rudder sprite
+The different angles are converted to radians and then adjusted so that they fit into typical trig functions
+The variable adiff is a difference between the wind and the player heading.
+The alignment variable takes the max of either 0.1 or cosine of adiff.
+This is such that if the angles are the same (adiff is 0) and cos adiff is 1 but if the angles are more than 90 degrees apart cos(adiff) will be less than one so max will result in only a .1
+Alignment is then multiplied by Speed and the sails setting, to get the actual speed value.
+Then the X and Y movement values are calculated by multiplying the actual speede times the cos and sin of the player heading respectively.
+Additionally this is where we check if the player is colling with the objects titled ground. If they are then speed goes to zero. If they aren't colliding the speed increments back to speed then all the squares move in the opposite direction of speed.
+This was done to prevent an issue where the player drove directly into the ground and then bounced back allowing to ground to conitue moving resulting in the player going off screen.
+
+
 
 
 
