@@ -99,9 +99,23 @@ I either return sqind if there is still a square with entropy greater than one o
 
 Back to the collapse new tiles function. If the output is the length of the input tiles then all tiles have collapsed. Then I break the while loop. Otherwise I randomize the tile that didn't collapse, and try again.
 
-Once the tiles are collapsed, 
+Once the tiles are collapsed, the PlaceTile function is called for each tile.
 
+## Place Tile
+The place tile takes in a single square input. Based on which tile the square has been collapsed to certain items are placed on that tile.
+Each tile has different potential sand bars that are added as children of the square. The sandbars are rects that are sized based on the size of the square. They have area and body which allows them to collide with the player boat. These are tagged as ground.
+Each square also has a fish or dolphin that are randomly placed on the tile. This sealife has neither area nor body since the player can't interset withn it. . All of these have a lower opacity so they look underwater.
+Additionally, there is a chance that each tile will have a treasure or gold sunken in it. 
+This gold has an area but no body since I don't want the player to stop moving when they collide with it. But it does have an isSensor tag in the area so the player can detect when it collides with it.
+The treasure also has an amount that is randomized between 0 and 500, and then rounded.
 
+## Dredge
+When the button d is pressed, text with an ellipsis pops up on screen. After a 1 second delay, the dredge function is  called. 
+This is meant to feel like the time it would take to drege something up from the bottom of the sea. 
+I wasn't sure how else to gamify this without adding a bunch of agents which would add more code complexity. So I was inspired by the game Dredge which I would highly recommend.
+The dredge function checks whether gold has been found using the goldFound object defined above the update function. This is just an onCollide with gold. If fold was found then the amount is extracted from the object. The text out is concatenated to state the amount, then the object is destroyed.
+If the object is null then the text out just reads bupkes.
+This is passed back to the function call to write out the text. Then after a second the text is destroyed.
 
 
 
