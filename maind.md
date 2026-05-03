@@ -41,13 +41,16 @@ loadShader("fog", null, `
        
     }
 `);
-
+//usePostEffect("fog", () => ({
+        //time: time(),
+       // res: vec2(width(), height()),
+    //}))
 add([
-    rect(width(), height()),
+   rect(width(), height()),
     pos(0, 0),
     fixed(),
     shader("fog", () => ({
-        time: time(),
+       time: time(),
         res: vec2(width(), height()),
     })),
     z(150),
@@ -133,7 +136,7 @@ player.onCollideEnd("gold", () => {
     //sail.scaleTo(.05+(Math.sin(wave%360*Math.PI/180)*0.02))
     //console.log(dt());
     wind_ind.angle = (wind + 270) % 360
-    let pang = (player.angle + 270) % 360
+    //let pang = (player.angle + 270) % 360
     sail.angle = (wind + 270) % 360 - player.angle;
     let moveX = 0;
     let moveY = 0;
@@ -181,7 +184,7 @@ player.onCollideEnd("gold", () => {
 
 
     if (sqL.pos.x < -gridOffset) { //console.log("too far East"); 
-      scrollWorld("left")
+      scrollWorld("right")
       allsq = get("square")
     }
     if (sqU.pos.y < -gridOffset) { //console.log("too far South"); 
@@ -190,7 +193,7 @@ player.onCollideEnd("gold", () => {
 
     }
     if (sqR.pos.x > (matsiz - 2) * sz) { //console.log("too far West");
-      scrollWorld("right")
+      scrollWorld("left")
       allsq = get("square")
 
     }
@@ -230,10 +233,10 @@ player.onCollideEnd("gold", () => {
     for (let s = 0; s < allsq2.length; s++) {
       
       const sq = allsq2[s];
-      if (sq.tilearray.length === 0) {
+      if (sq.tilearray.length == 0) {
         sq.tilearray = [...arr];
     }
-    if (sq.tilearray.length === 1) continue; 
+    if (sq.tilearray.length == 1) {continue}; 
       let forbiddentiles = [];
       if (sq.matRow > 1) {
         const sqnorth = matCode[sq.matCol][sq.matRow - 1];
@@ -241,7 +244,7 @@ player.onCollideEnd("gold", () => {
         if (sq.north > 0) {
           forbiddentiles = tileRules[sq.north - 1][0];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
-          if (sq.tilearray.length === 0) {
+          if (sq.tilearray.length == 0) {
             randomizeTile(sq);
           }
         }
@@ -253,7 +256,7 @@ player.onCollideEnd("gold", () => {
         if (sq.south > 0) {
           forbiddentiles = tileRules[sq.south - 1][2];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
-          if (sq.tilearray.length === 0) {
+          if (sq.tilearray.length == 0) {
             randomizeTile(sq);
           }
         }
@@ -264,7 +267,7 @@ player.onCollideEnd("gold", () => {
         if (sq.west > 0) {
           forbiddentiles = tileRules[sq.west - 1][3];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
-          if (sq.tilearray.length === 0) {
+          if (sq.tilearray.length == 0) {
             randomizeTile(sq);
           }
         }
@@ -276,7 +279,7 @@ player.onCollideEnd("gold", () => {
         if (sq.east > 0) {
           forbiddentiles = tileRules[sq.east - 1][1];
           sq.tilearray = sq.tilearray.filter((t) => !forbiddentiles.includes(t));
-          if (sq.tilearray.length === 0) {
+          if (sq.tilearray.length == 0) {
              randomizeTile(sq);
           }
         }
@@ -289,14 +292,14 @@ player.onCollideEnd("gold", () => {
       }
       //sq.label.text = String(sq.getEntropy());
       //sq.label.text = String(sq.getTile());
-      if (sq.tilearray.length === 0) {
+      //if (sq.tilearray.length == 0) {
 
-      }
-      //else if (sq.tilearray.length === 1){placeTile(sq)}
+      //}
+      //else if (sq.tilearray.length == 1){placeTile(sq)}
 
     }
 
-    if (sqind === -1) return allsq2.length
+    if (sqind == -1) return allsq2.length
     else { return sqind; }
 
   }
@@ -310,7 +313,7 @@ player.onCollideEnd("gold", () => {
 let treasures = [];
   function placeTile(sqin) {
     if (sqin.placed) return;
-    let tile1 = sqin.getTile();
+    //let tile1 = sqin.getTile();
     //if (tile1 == 0) return;
     sqin.placed = true;
 
@@ -639,12 +642,12 @@ function updateIndices() {
 
     if (direction == "left" || direction == "right") {
       let rmInd
-      let goingLeft
+      let goingRight
       if (direction=="left")
-      {goingLeft=true}
+      {goingRight=false}
       else
-      {goingLeft=false}
-      if (goingLeft==true) 
+      {goingRight=true}
+      if (goingRight==true) 
       { rmInd = 0 } 
       else 
       { rmInd = matCode.length - 1 }
@@ -654,7 +657,7 @@ function updateIndices() {
         if (matCode[rmInd][h]) 
         {destroy(matCode[rmInd][h])}
       }
-      if (goingLeft==true) 
+      if (goingRight==true) 
       { matCode.shift() } 
       else { matCode.pop() }
       updateIndices();
@@ -662,7 +665,7 @@ function updateIndices() {
      
       let refCol
       let ncind
-      if (goingLeft==true) {
+      if (goingRight==true) {
         refCol = matCode[matCode.length - 1]
         ncind = matCode.length
       }
@@ -671,18 +674,18 @@ function updateIndices() {
         ncind = 0
       }
       let newX = refCol[checkind].pos.x
-      if (goingLeft==true) { newX += sz }
+      if (goingRight==true) { newX += sz }
       else { newX -= sz }
 
       const newCol = [];
       for (let h = 0; h < matsiz; h++) {
         newCol.push(spawnSquare(newX, refCol[h].pos.y, ncind, h));
       }
-      if (goingLeft==true) { matCode.push(newCol) } else { matCode.unshift(newCol) }
+      if (goingRight==true) { matCode.push(newCol) } else { matCode.unshift(newCol) }
       updateIndices();
 
       let neighbour
-      if (goingLeft==true) { neighbour = matCode[matCode.length - 2] } else { neighbour = matCode[1] }
+      if (goingRight==true) { neighbour = matCode[matCode.length - 2] } else { neighbour = matCode[1] }
       collapseNewTiles([...newCol, ...neighbour]);
 
     } else {
@@ -744,26 +747,15 @@ function updateIndices() {
     }
   }
   function collapseNewTiles(tiles) {
-    let goodtiles = []
-    let badtiles=[]
-    for (let i = 0; i < tiles.length; i++) {
-      if (tiles[i]) { goodtiles.push(tiles[i]) }
-    }
+    const goodtiles = tiles.filter(sq => sq);
     
-    while (true) {
-      let ind = updateTiles(goodtiles);
-      if (ind >= goodtiles.length) {
-        //console.log(ind, goodtiles.length);
-        break};
-      let sq2=goodtiles[ind];
-      let entropy = sq2.getEntropy()
-      if (entropy == 1) {
-        placeTile(sq2);
-        //sq2.label.text=sq2.getTile()+","+sq2.getEntropy()
-        break}
-      randomizeTile(sq2);
-      placeTile(sq2)
-    }
+while (true) {
+    let ind = updateTiles(goodtiles);
+    if (ind >= goodtiles.length) {break};
+    randomizeTile(goodtiles[ind]);
+    //placeTile(goodtiles[ind]);
+}
+
         for (let i = 0; i < goodtiles.length; i++) {
         if (goodtiles[i].getEntropy() == 1) {
             placeTile(goodtiles[i]);
