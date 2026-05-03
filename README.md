@@ -82,6 +82,25 @@ Finally, the collapse new tiles function is called with the new column and the r
 (The function performs a similar set of tasks if the up or down directions are called)
 
 ## Collapse New Tiles
+This function wraps around a couple others to form the wave function collapse. I had multiple issues where the tiles wouldn't collapse or would result in no possible tiles. This wrapper helped resolve that issue.
+The function filters out any elements passed in that aren't tiles or that are null.
+Then a while loop is kicked off. In this while loop the good tiles are passed into the updateTiles function. This was my initial wave function collapse function before I decided to attempt the infinite world.
+### updateTiles
+This functions also takes in a set of tiles.
+sqind and sqmin are declared up front. 
+Then a for loop is kickedoff, looping between all the different input squares.
+To start, if any square has been stripped down to zero possibilities, its tilearray is bumped back to all possibilities. If a square only has one possibility then the loop skips it since it's already collapsed.
+Next I go through and get the square at each of the cardinal directions (unless it's on an edge). 
+I get either the tileType if there is only one, or the first tile in the array of tiles if there are multiple. 
+Then I go to the tileRules and pull out the forbidden tiles for that tile type and that direction. 
+Then the square is filtered to remove any of those forbidden tiles. If for some reason this square results in no options, the square is randomized. (probably not the best way of collapsing, but this seems to work).
+I get the entropy of each of the squares. I start with a high entropy and get a lower and lower entropy. The lowest entropy so far is sqmin and the index of that square is sqind. If sqind doesn't update then it stays as negative 1.
+I either return sqind if there is still a square with entropy greater than one or the length of the tile array if nothing needed to be updated and everything was collapsed.
+
+Back to the collapse new tiles function. If the output is the length of the input tiles then all tiles have collapsed. Then I break the while loop. Otherwise I randomize the tile that didn't collapse, and try again.
+
+Once the tiles are collapsed, 
+
 
 
 
