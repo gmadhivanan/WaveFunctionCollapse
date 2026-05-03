@@ -68,7 +68,20 @@ Then it checks whether the each square has a position too far in each direction.
 
 ## Scroll world
 I realized while I was writing the wave function collapse code that any tiles added to the edge of an already collapsed column would just need the column and a new empty column of tiles to extend the world. Then the column on the opposite side could be removed so a consisitent tile matrix size would exist. This function operates on that idea. 
-First the function needs the direction that the player is going. rmInd is the index that is to be removed. So if the player is going 
+First the function needs the direction that the player is going. rmInd is the index that is to be removed. So if the player is going left the tile at the end of matcode will be removed. If the player is going right, the tiles at the beginining of matcode will be removed.
+After the tiles are destroyed, the matCode needs to be adjusted. The shift or pop functions are used to remove the values at the beginning or end. Then the updateIndices function is called to update the matRow and matCol values for each tile. These values are used later for easy indexing.
+Next we move on to making the new tiles for a new column. Depending on whether the player is going left or right, the reference column is chosen.
+The reference column is the column that will be used to help collapse the new tiles.
+The new column index is ncind.
+We also need the x position to place the new tiles. So we use the x position of the checkind tile in the reference column to get the new x value. We also need to account for the size of the tile so, size is added or subtracted from that x value.
+After this a new array is created to store the new column and we loop through the matrix size to spawn new squares using the spawnSquare function to fill out the new column.
+The spawn square function is fairly simply it just takes in the basic inputs to call the addsquare function and sets possible tiles to all options then returns the square. 
+Then this new column is pushed or unshifted into the matCode 2d array and then the indices are updated again with the update index function.
+Next we get the neighboring tiles for collapsing. I realize I could have just used the refCol again, but this was just to make sure that the latest matrix content was used for collapsing.
+Finally, the collapse new tiles function is called with the new column and the refernce column. 
+(The function performs a similar set of tasks if the up or down directions are called)
+
+## Collapse New Tiles
 
 
 
